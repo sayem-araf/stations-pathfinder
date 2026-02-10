@@ -1,11 +1,11 @@
-package pathfinder
+package algorithm
 
 // Station represent a single node in the rail network
 // It is assumed to be valdi and unique (validate upstream)
 type Station struct {
 	Name string
-	x    int // x and y are optional if some kinda grid based maps is wanted.
-	y    int
+	X    int // x and y are optional if some kinda grid based maps is wanted.
+	Y    int
 }
 
 // graph represents the rail network as an adjacency structure

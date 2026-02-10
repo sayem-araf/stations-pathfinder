@@ -1,4 +1,4 @@
-package pathfinder
+package algorithm
 
 // FindShortestPath returns a single shortest path between start and end.
 // If no path exists, it returns nil.

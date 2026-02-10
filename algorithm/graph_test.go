@@ -1,4 +1,4 @@
-package pathfinder
+package algorithm
 
 import (
 	"fmt"
