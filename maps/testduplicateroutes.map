@@ -1,0 +1,7 @@
+stations:
+A,0,0
+B,1,1
+
+connections:
+A-B
+B-A

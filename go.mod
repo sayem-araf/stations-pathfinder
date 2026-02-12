@@ -1,3 +1,3 @@
 module gitea.kood.tech/sayemaraf/pathfinder
 
-go 1.22.2
+go 1.25.7

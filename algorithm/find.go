@@ -5,7 +5,7 @@ package algorithm
 
 // func (g is a receiver variable *Graph point to Graph and means that the function can read the graph, modify it and avoid copying large data.)
 
-func (g *Graph) findShortestPath(start, end string, blocked map[string]bool) Path {
+func (g *Graph) FindShortestPath(start, end string, blocked map[string]bool) Path {
 	if start == end {
 		return Path{start}
 	}
@@ -49,7 +49,7 @@ func (g *Graph) FindPaths(start, end string) []Path {
 	blocked["B"] = true
 
 	for {
-		path := g.findShortestPath(start, end, blocked)
+		path := g.FindShortestPath(start, end, blocked)
 		if path == nil {
 			break
 		}
