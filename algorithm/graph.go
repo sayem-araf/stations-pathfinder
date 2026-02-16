@@ -12,7 +12,7 @@ type Station struct {
 // It is safe for traversal and may contain cycles
 
 type Graph struct {
-	Stations map[string]*Station
+	Stations map[string]*Station // stations is the map of Station struct
 	Adj      map[string][]string // adjacency list: station name -> neighbor names
 }
 
@@ -29,21 +29,21 @@ type Path []string
 // - No duplicate edges are created
 
 func NewGraph(Stations []*Station, connections [][2]string) *Graph {
-	g := &Graph{
-		Stations: make(map[string]*Station),
-		Adj:      make(map[string][]string),
+	g := &Graph{ // receives data from Graph struct
+		Stations: make(map[string]*Station), // makes a map of Stations from graph data
+		Adj:      make(map[string][]string), // makes a Adj map pf the station graph data
 	}
 
-	for _, s := range Stations {
-		g.Stations[s.Name] = s
-		g.Adj[s.Name] = []string{}
+	for _, s := range Stations { // Loops trough all stations one by one, index is ignored
+		g.Stations[s.Name] = s     // Stores station inside the graph station map using its name as the key
+		g.Adj[s.Name] = []string{} // Creates an empty list of neigbors for this station
 	}
 
-	for _, c := range connections {
-		a, b := c[0], c[1]
-		g.Adj[a] = append(g.Adj[a], b)
-		g.Adj[b] = append(g.Adj[b], a)
+	for _, c := range connections { // loops trough all of the connections
+		a, b := c[0], c[1]             // extracts the two station in connections a and b and unpacks the connection into two endpoints
+		g.Adj[a] = append(g.Adj[a], b) // adds station b as a neigbor of station a, a -> b
+		g.Adj[b] = append(g.Adj[b], a) // adds station a as a neigbor of station b, a -> b
 	}
 
-	return g
+	return g // returns graph
 }
