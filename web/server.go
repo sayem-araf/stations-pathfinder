@@ -1,4 +1,4 @@
-package web
+package main
 
 import (
 	"encoding/json"
@@ -40,9 +40,9 @@ type TrainMovement struct {
 	Station string `json:"station"`
 }
 
-func Start() {
+func main() {
 	// Serve static files
-	fs := http.FileServer(http.Dir("static"))
+	fs := http.FileServer(http.Dir("web/static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	// Serve main page
@@ -53,18 +53,28 @@ func Start() {
 	http.HandleFunc("/api/pathfind", handlePathfind)
 
 	port := ":8080"
-	fmt.Printf("Pathfinder Web UI starting on http://localhost%s\n", port)
+	fmt.Printf("🚂 Pathfinder Web UI starting on http://localhost%s\n", port)
 	fmt.Println("Open your browser and navigate to the URL above")
 	log.Fatal(http.ListenAndServe(port, nil))
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/index.html"))
-	tmpl.Execute(w, nil)
+	tmpl, err := template.ParseFiles("web/templates/index.html")
+	if err != nil {
+		log.Printf("Error loading template: %v", err)
+		http.Error(w, "Error loading page: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	
+	err = tmpl.Execute(w, nil)
+	if err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Error rendering page: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func listMaps(w http.ResponseWriter, r *http.Request) {
-	files, err := os.ReadDir("../maps")
+	files, err := os.ReadDir("maps")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -98,7 +108,7 @@ func handlePathfind(w http.ResponseWriter, r *http.Request) {
 	req.EndStation = strings.ToLower(strings.TrimSpace(req.EndStation))
 
 	// Read and parse the map file
-	mapPath := filepath.Join("../maps", req.MapFile)
+	mapPath := filepath.Join("maps", req.MapFile)
 	fileContent, err := os.ReadFile(mapPath)
 	if err != nil {
 		sendError(w, "Failed to read map file: "+err.Error())

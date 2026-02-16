@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strings"
 
 	"gitea.kood.tech/sayemaraf/pathfinder/algorithm"
@@ -101,4 +102,81 @@ func ParseMap(lines []string) ([]*algorithm.Station, [][2]string) {
 	}
 
 	return stationsSlice, connections
+}
+
+// SimulateTrainMovement simulates and outputs train movements turn by turn
+func SimulateTrainMovement(paths []algorithm.Path, numTrains int, start, end string) {
+	type Train struct {
+		ID       int
+		Path     algorithm.Path
+		Position int
+	}
+
+	// Create trains and assign them to paths
+	trains := make([]*Train, numTrains)
+	for i := 0; i < numTrains; i++ {
+		pathIndex := i % len(paths)
+		trains[i] = &Train{
+			ID:       i + 1,
+			Path:     paths[pathIndex],
+			Position: 0,
+		}
+	}
+
+	// Track which stations are currently occupied (excluding start and end)
+	occupied := make(map[string]bool)
+
+	// Simulate movement turn by turn
+	for {
+		var moves []string
+		allFinished := true
+
+		for _, train := range trains {
+			// Check if train has reached the end
+			if train.Position >= len(train.Path)-1 {
+				continue
+			}
+
+			allFinished = false
+
+			// Try to move train to next station
+			nextPos := train.Position + 1
+			nextStation := train.Path[nextPos]
+
+			// Check if next station is available (not occupied)
+			// Start and end stations can have unlimited trains
+			canMove := nextStation == end || nextStation == start || !occupied[nextStation]
+
+			if canMove {
+				// Mark current station as free (if not start)
+				if train.Position > 0 {
+					currentStation := train.Path[train.Position]
+					if currentStation != start {
+						occupied[currentStation] = false
+					}
+				}
+
+				// Move train
+				train.Position = nextPos
+
+				// Mark new station as occupied (if not end)
+				if nextStation != end {
+					occupied[nextStation] = true
+				}
+
+				// Record the move
+				moves = append(moves, fmt.Sprintf("T%d-%s", train.ID, nextStation))
+			}
+		}
+
+		// Print all moves for this turn
+		if len(moves) > 0 {
+			fmt.Println(strings.Join(moves, " "))
+		}
+
+		// Exit when all trains have finished
+		if allFinished {
+			break
+		}
+	}
 }
