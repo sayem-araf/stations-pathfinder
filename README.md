@@ -103,7 +103,7 @@ If you haven’t built, you can run the code by **locating** the folder and usin
 
 ## Error handler
 
-
+Here are all of the errors the program reports and why.
 
 ## Usage
 
