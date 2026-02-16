@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ func PrintError(msg string) {
 	fmt.Fprintln(os.Stderr, "Error:", msg)
 	os.Exit(1)
 }
+
 // Reads the input file and prints error if fails
 func MustReadFile(filePath string) []byte {
 	data, err := os.ReadFile(filePath)
@@ -35,44 +36,44 @@ func ValidateArgs(args []string) {
 }
 
 func ValidateNewStation(stations map[string]*algorithm.Station, name string) {
-    if _, exists := stations[name]; exists {
-        PrintError("Duplicate station name: " + name)
-    }
+	if _, exists := stations[name]; exists {
+		PrintError("Duplicate station name: " + name)
+	}
 }
 
 func ValidateConnection(stations map[string]*algorithm.Station, a, b string) {
-    if _, ok := stations[a]; !ok {
-        PrintError("Unknown station in connection: " + a)
-    }
-    if _, ok := stations[b]; !ok {
-        PrintError("Unknown station in connection: " + b)
-    }
+	if _, ok := stations[a]; !ok {
+		PrintError("Unknown station in connection: " + a)
+	}
+	if _, ok := stations[b]; !ok {
+		PrintError("Unknown station in connection: " + b)
+	}
 }
 
 func ValidateRoute(stations map[string]*algorithm.Station, a, b string, seenRoutes map[string]bool) {
-    if _, ok := stations[a]; !ok {
-        PrintError("Unknown station in connection: " + a)
-    }
-    if _, ok := stations[b]; !ok {
-        PrintError("Unknown station in connection: " + b)
-    }
+	if _, ok := stations[a]; !ok {
+		PrintError("Unknown station in connection: " + a)
+	}
+	if _, ok := stations[b]; !ok {
+		PrintError("Unknown station in connection: " + b)
+	}
 
-    if a == b {
-        PrintError("Connection cannot link a station to itself: " + a)
-    }
+	if a == b {
+		PrintError("Connection cannot link a station to itself: " + a)
+	}
 
-    key := a
-    if a > b {
-        key = b + "-" + a
-    } else {
-        key = a + "-" + b
-    }
+	key := a
+	if a > b {
+		key = b + "-" + a
+	} else {
+		key = a + "-" + b
+	}
 
-    if seenRoutes[key] {
-        PrintError("Duplicate connection between " + a + " and " + b)
-    }
+	if seenRoutes[key] {
+		PrintError("Duplicate connection between " + a + " and " + b)
+	}
 
-    seenRoutes[key] = true
+	seenRoutes[key] = true
 }
 
 // Checks if stations in the input arguments are valid
@@ -80,16 +81,15 @@ func ValidateStations(start string, end string, stations map[string]bool) {
 	if start == end {
 		PrintError("Start station can't be the same as end station")
 	}
-	
-	if !stations[start]{
+
+	if !stations[start] {
 		PrintError("Invalid start station")
 	}
 
-	if !stations[end]{
+	if !stations[end] {
 		PrintError("Invalid end station")
 	}
 }
-
 
 // Checks if number of trains is valid
 func ValidateTrains(trains string) int {
@@ -144,9 +144,9 @@ func ValidateCoordinates(stations map[string]*algorithm.Station) {
 
 // Checks if the path exists between stations
 func ValidatePathExists(start, end string, g *algorithm.Graph) {
-    if g.FindShortestPath(start, end, map[string]bool{}) == nil {
-        PrintError(fmt.Sprintf("No path exists between %s and %s", start, end))
-    }
+	if g.FindShortestPath(start, end, map[string]bool{}) == nil {
+		PrintError(fmt.Sprintf("No path exists between %s and %s", start, end))
+	}
 }
 
 // Converts coordinate values from string to integer

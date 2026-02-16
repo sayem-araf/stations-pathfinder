@@ -1,4 +1,4 @@
-package main
+package web
 
 import (
 	"encoding/json"
@@ -40,7 +40,7 @@ type TrainMovement struct {
 	Station string `json:"station"`
 }
 
-func main() {
+func Start() {
 	// Serve static files
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))

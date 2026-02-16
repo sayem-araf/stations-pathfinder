@@ -1,6 +1,6 @@
-package main
+package parser
 
-import(
+import (
 	"strings"
 
 	"gitea.kood.tech/sayemaraf/pathfinder/algorithm"
@@ -33,25 +33,24 @@ func NormalizeInput(data []byte) []string {
 
 // Builds maps
 func BuildStationMaps(stations []*algorithm.Station) (map[string]*algorithm.Station, map[string]bool) {
-    stationsMap := make(map[string]*algorithm.Station)
-    stationExists := make(map[string]bool)
+	stationsMap := make(map[string]*algorithm.Station)
+	stationExists := make(map[string]bool)
 
-    for _, s := range stations {
-        stationsMap[s.Name] = s
-        stationExists[s.Name] = true
-    }
+	for _, s := range stations {
+		stationsMap[s.Name] = s
+		stationExists[s.Name] = true
+	}
 
-    return stationsMap, stationExists
+	return stationsMap, stationExists
 }
-
 
 // Takes normalized lines and returns a slice of stations and a slice of connections
 func ParseMap(lines []string) ([]*algorithm.Station, [][2]string) {
 
-	section := "" // tracks whether we are in "stations" or "connections"
+	section := ""                                   // tracks whether we are in "stations" or "connections"
 	stations := make(map[string]*algorithm.Station) // temporary map to hold stations by name
-	connections := [][2]string{} // slice of station pairs representing connections
-	
+	connections := [][2]string{}                    // slice of station pairs representing connections
+
 	for _, line := range lines {
 		switch line {
 		case "stations:":
@@ -69,7 +68,7 @@ func ParseMap(lines []string) ([]*algorithm.Station, [][2]string) {
 			name := strings.TrimSpace(parts[0])
 			X := strings.TrimSpace(parts[1])
 			Y := strings.TrimSpace(parts[2])
-			
+
 			// Converts coordinates from string to int
 			xi := MustParseInt(X, name, "X")
 			yi := MustParseInt(Y, name, "Y")
@@ -78,7 +77,7 @@ func ParseMap(lines []string) ([]*algorithm.Station, [][2]string) {
 
 			// Add the station to the map so it can be looked up by name
 			stations[name] = &algorithm.Station{Name: name, X: xi, Y: yi}
-    		continue
+			continue
 		}
 
 		// Parses connection lines
