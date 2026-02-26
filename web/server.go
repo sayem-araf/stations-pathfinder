@@ -185,40 +185,56 @@ func handlePathfind(w http.ResponseWriter, r *http.Request) {
 		stationsMap[strings.ToLower(s.Name)] = s
 	}
 
-	// If start/end stations are empty, find the two stations with maximum distance
+	// If start/end stations are empty, use predefined mappings for each map
 	if req.StartStation == "" || req.EndStation == "" {
-		maxDist := 0.0
-		var maxStart, maxEnd string
-		
-		stationList := make([]*algorithm.Station, 0, len(stationsMap))
-		for _, s := range stationsMap {
-			stationList = append(stationList, s)
+		// Predefined start/end stations for each map
+		mapStations := map[string][2]string{
+			"london.map":    {"waterloo", "st_pancras"},
+			"bond.map":      {"bond_square", "space_port"},
+			"jungle.map":    {"jungle", "desert"},
+			"beethoven.map": {"beethoven", "part"},
+			"beginning.map": {"beginning", "terminus"},
+			"one.map":       {"three", "four"},
+			"small.map":     {"small", "large"},
 		}
-		
-		for i := 0; i < len(stationList); i++ {
-			for j := i + 1; j < len(stationList); j++ {
-				dx := float64(stationList[i].X - stationList[j].X)
-				dy := float64(stationList[i].Y - stationList[j].Y)
-				dist := math.Sqrt(dx*dx + dy*dy) // actual Euclidean distance
-				
-				if dist > maxDist {
-					maxDist = dist
-					// Use alphabetical order for consistency
-					name1 := strings.ToLower(stationList[i].Name)
-					name2 := strings.ToLower(stationList[j].Name)
-					if name1 < name2 {
-						maxStart = name1
-						maxEnd = name2
-					} else {
-						maxStart = name2
-						maxEnd = name1
+
+		if predefined, exists := mapStations[req.MapFile]; exists {
+			req.StartStation = predefined[0]
+			req.EndStation = predefined[1]
+		} else {
+			// Fallback to maximum distance calculation for unknown maps
+			maxDist := 0.0
+			var maxStart, maxEnd string
+
+			stationList := make([]*algorithm.Station, 0, len(stationsMap))
+			for _, s := range stationsMap {
+				stationList = append(stationList, s)
+			}
+
+			for i := 0; i < len(stationList); i++ {
+				for j := i + 1; j < len(stationList); j++ {
+					dx := float64(stationList[i].X - stationList[j].X)
+					dy := float64(stationList[i].Y - stationList[j].Y)
+					dist := math.Sqrt(dx*dx + dy*dy)
+
+					if dist > maxDist {
+						maxDist = dist
+						name1 := strings.ToLower(stationList[i].Name)
+						name2 := strings.ToLower(stationList[j].Name)
+						if name1 < name2 {
+							maxStart = name1
+							maxEnd = name2
+						} else {
+							maxStart = name2
+							maxEnd = name1
+						}
 					}
 				}
 			}
+
+			req.StartStation = maxStart
+			req.EndStation = maxEnd
 		}
-		
-		req.StartStation = maxStart
-		req.EndStation = maxEnd
 	} else {
 		// Normalize station names to lowercase for case-insensitive matching
 		req.StartStation = strings.ToLower(strings.TrimSpace(req.StartStation))

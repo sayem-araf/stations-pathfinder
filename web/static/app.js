@@ -255,44 +255,63 @@ function drawNetwork() {
 function drawTrainsAnimated() {
     if (movements.length === 0) return;
 
-    // Get current turn movements
-    const turnMovements = currentTurn < movements.length ? movements[currentTurn] : [];
+    // Build a complete history of where each train is at the current turn
+    const trainLocations = {};
     
-    // Group trains by their target station for this turn
+    // Initialize all trains at the start station
+    const numTrains = Object.keys(trainPaths).length;
+    for (let i = 1; i <= numTrains; i++) {
+        trainLocations[i] = startStation;
+    }
+    
+    // Update locations based on movements up to current turn
+    for (let t = 0; t <= currentTurn && t < movements.length; t++) {
+        movements[t].forEach(move => {
+            trainLocations[move.trainId] = move.station;
+        });
+    }
+
+    // Now determine which trains are moving this turn
+    const currentTurnMovements = currentTurn < movements.length ? movements[currentTurn] : [];
     const movingTrains = new Map();
-    turnMovements.forEach(move => {
+    currentTurnMovements.forEach(move => {
         movingTrains.set(move.trainId, move.station);
     });
 
-    // Get all train IDs
-    const allTrains = Object.keys(trainPaths).map(id => parseInt(id));
-
-    allTrains.forEach(trainId => {
-        const targetStation = movingTrains.get(trainId);
-
-        // Determine train's current and next position
-        let currentPos, nextPos;
+    // Draw each train
+    Object.keys(trainPaths).forEach(trainId => {
+        const id = parseInt(trainId);
+        const targetStation = movingTrains.get(id);
         
-        if (targetStation) {
-            // Train is moving this turn
-            const prevStation = getPreviousStation(trainId, currentTurn);
-            currentPos = positionMap[prevStation.toLowerCase()];
-            nextPos = positionMap[targetStation.toLowerCase()];
+        if (targetStation && animationProgress < 1) {
+            // Train is moving this turn - get previous location
+            let prevStation = startStation;
+            
+            // Find where the train was before this turn
+            for (let t = currentTurn - 1; t >= 0; t--) {
+                const prevMove = movements[t].find(m => m.trainId === id);
+                if (prevMove) {
+                    prevStation = prevMove.station;
+                    break;
+                }
+            }
+            
+            const currentPos = positionMap[prevStation.toLowerCase()];
+            const nextPos = positionMap[targetStation.toLowerCase()];
             
             if (currentPos && nextPos) {
-                // Interpolate position based on animation progress
+                // Interpolate position
                 const x = currentPos.x + (nextPos.x - currentPos.x) * animationProgress;
                 const y = currentPos.y + (nextPos.y - currentPos.y) * animationProgress;
-                
-                drawTrain(x, y, trainId);
+                drawTrain(x, y, id);
             }
         } else {
-            // Train is waiting at a station
-            const station = getCurrentStation(trainId, currentTurn);
-            const pos = positionMap[station.toLowerCase()];
+            // Train is at a station (not moving or animation complete)
+            const currentLocation = trainLocations[id];
+            const pos = positionMap[currentLocation.toLowerCase()];
             
             if (pos) {
-                drawTrain(pos.x, pos.y, trainId);
+                drawTrain(pos.x, pos.y, id);
             }
         }
     });
