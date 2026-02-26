@@ -41,15 +41,6 @@ func ValidateNewStation(stations map[string]*algorithm.Station, name string) {
 	}
 }
 
-func ValidateConnection(stations map[string]*algorithm.Station, a, b string) {
-	if _, ok := stations[a]; !ok {
-		PrintError("Unknown station in connection: " + a)
-	}
-	if _, ok := stations[b]; !ok {
-		PrintError("Unknown station in connection: " + b)
-	}
-}
-
 func ValidateRoute(stations map[string]*algorithm.Station, a, b string, seenRoutes map[string]bool) {
 	if _, ok := stations[a]; !ok {
 		PrintError("Unknown station in connection: " + a)

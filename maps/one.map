@@ -16,12 +16,3 @@ two-five
 one-four
 six-two
 one-six
-
-------------------------------
-
-T1-three
-T1-one T2-three
-T1-four T2-one T3-three
-T2-four T3-one T4-three
-T3-four T4-one
-T4-four

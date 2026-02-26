@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 
 	"gitea.kood.tech/sayemaraf/pathfinder/algorithm"
 	"gitea.kood.tech/sayemaraf/pathfinder/parser"
+	"gitea.kood.tech/sayemaraf/pathfinder/web"
 )
 
 func main() {
@@ -14,16 +14,14 @@ func main() {
 	flag.Parse()
 
 	if *webMode {
-		// Run web server
-		fmt.Println("Starting web server...")
-		fmt.Println("Run: go run web/server.go")
-		fmt.Println("Or build: go build -o pathfinder-web web/server.go && ./pathfinder-web")
-		os.Exit(0)
+		web.Start()
+		return
 	}
 
-	// CLI Mode - same as parser/main.go
-	args := flag.Args() // Get remaining args after flags
+	// Use flag.Args() so it works correctly whether or not -w is passed
+	args := flag.Args()
 
+	// Checks that four arguments are used
 	parser.ValidateArgs(args)
 
 	filePath := args[0]
@@ -31,23 +29,42 @@ func main() {
 	endStation := args[2]
 	trains := args[3]
 
+	// Stores the file
 	fileContent := parser.MustReadFile(filePath)
 	lines := parser.NormalizeInput(fileContent)
+
+	// Stores the data from stations and connections sections
 	stations, connections := parser.ParseMap(lines)
+
+	// stationsMap stores stations by name and stationExists is used for boolean checking
 	stationsMap, stationExists := parser.BuildStationMaps(stations)
 
 	parser.ValidateSections(stationsMap, connections)
-	parser.ValidateStationMap(stationsMap)
+	parser.ValidateStationNames(stationsMap)
 	parser.ValidateCoordinates(stationsMap)
-	parser.ValidateStations(startStation, endStation, stationExists)
-	parser.ValidateConnections(connections, stationExists)
 
+	seenRoutes := make(map[string]bool)
+	for _, c := range connections {
+		a, b := c[0], c[1]
+		parser.ValidateRoute(stationsMap, a, b, seenRoutes)
+	}
+
+	parser.ValidateStations(startStation, endStation, stationExists)
+
+	// Builds the graph from stations and connections
 	graph := algorithm.NewGraph(stations, connections)
+
 	parser.ValidatePathExists(startStation, endStation, graph)
 
-	paths := graph.FindPaths(startStation, endStation)
+	// Converts and validates number of trains
 	numTrains := parser.ValidateTrains(trains)
 
-	// Simulate train movements (THE MISSING PIECE!)
-	parser.SimulateTrainMovement(paths, numTrains, startStation, endStation)
+	// Finds all valid paths
+	paths := graph.FindPaths(startStation, endStation)
+
+	// Run the scheduler and print train movements
+	scheduler := algorithm.NewScheduler(paths, numTrains, startStation, endStation)
+	scheduler.Run()
+
+	os.Exit(0)
 }

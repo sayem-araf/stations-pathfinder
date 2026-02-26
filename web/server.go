@@ -1,10 +1,11 @@
-package main
+package web
 
 import (
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -21,12 +22,24 @@ type PathfinderRequest struct {
 	NumTrains    int    `json:"numTrains"`
 }
 
+type MapDataRequest struct {
+	MapFile string `json:"mapFile"`
+}
+
+type MapDataResponse struct {
+	Success  bool               `json:"success"`
+	Error    string             `json:"error,omitempty"`
+	Stations map[string]Station `json:"stations"`
+}
+
 type PathfinderResponse struct {
-	Success   bool               `json:"success"`
-	Error     string             `json:"error,omitempty"`
-	Stations  map[string]Station `json:"stations"`
-	Paths     [][]string         `json:"paths"`
-	Movements [][]TrainMovement  `json:"movements"`
+	Success      bool               `json:"success"`
+	Error        string             `json:"error,omitempty"`
+	Stations     map[string]Station `json:"stations"`
+	Paths        [][]string         `json:"paths"`
+	Movements    [][]TrainMovement  `json:"movements"`
+	StartStation string             `json:"startStation"`
+	EndStation   string             `json:"endStation"`
 }
 
 type Station struct {
@@ -40,37 +53,33 @@ type TrainMovement struct {
 	Station string `json:"station"`
 }
 
-func main() {
-	// Serve static files
+func Start() {
+	// API endpoints (register these FIRST before catch-all route)
+	http.HandleFunc("/api/maps", listMaps)
+	http.HandleFunc("/api/map-data", handleMapData)
+	http.HandleFunc("/api/pathfind", handlePathfind)
+
+	// Serve static files from web/static
 	fs := http.FileServer(http.Dir("web/static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	// Serve main page
+	// Serve main page (register this LAST)
 	http.HandleFunc("/", serveHome)
 
-	// API endpoints
-	http.HandleFunc("/api/maps", listMaps)
-	http.HandleFunc("/api/pathfind", handlePathfind)
-
 	port := ":8080"
-	fmt.Printf("🚂 Pathfinder Web UI starting on http://localhost%s\n", port)
+	fmt.Printf("Pathfinder Web UI starting on http://localhost%s\n", port)
 	fmt.Println("Open your browser and navigate to the URL above")
 	log.Fatal(http.ListenAndServe(port, nil))
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("web/templates/index.html")
-	if err != nil {
-		log.Printf("Error loading template: %v", err)
-		http.Error(w, "Error loading page: "+err.Error(), http.StatusInternalServerError)
+	// Only serve home page for exact root path
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
 		return
 	}
-	
-	err = tmpl.Execute(w, nil)
-	if err != nil {
-		log.Printf("Error executing template: %v", err)
-		http.Error(w, "Error rendering page: "+err.Error(), http.StatusInternalServerError)
-	}
+	tmpl := template.Must(template.ParseFiles("web/templates/index.html"))
+	tmpl.Execute(w, nil)
 }
 
 func listMaps(w http.ResponseWriter, r *http.Request) {
@@ -82,13 +91,69 @@ func listMaps(w http.ResponseWriter, r *http.Request) {
 
 	var mapFiles []string
 	for _, file := range files {
-		if !file.IsDir() && strings.HasSuffix(file.Name(), ".map") {
+		if !file.IsDir() && strings.HasSuffix(file.Name(), ".map") && !strings.HasPrefix(file.Name(), "test") {
 			mapFiles = append(mapFiles, file.Name())
 		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(mapFiles)
+}
+
+func handleMapData(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req MapDataRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		sendMapDataError(w, "Invalid request: "+err.Error())
+		return
+	}
+
+	// Read and parse the map file
+	mapPath := filepath.Join("maps", req.MapFile)
+	fileContent, err := os.ReadFile(mapPath)
+	if err != nil {
+		sendMapDataError(w, "Failed to read map file: "+err.Error())
+		return
+	}
+
+	lines := normalizeInput(fileContent)
+	stations, _ := parseMap(lines)
+
+	// Build station map with lowercase keys
+	stationsMap := make(map[string]*algorithm.Station)
+	for _, s := range stations {
+		stationsMap[strings.ToLower(s.Name)] = s
+	}
+
+	// Convert stations for response
+	stationsResponse := make(map[string]Station)
+	for name, s := range stationsMap {
+		stationsResponse[name] = Station{
+			Name: s.Name,
+			X:    s.X,
+			Y:    s.Y,
+		}
+	}
+
+	response := MapDataResponse{
+		Success:  true,
+		Stations: stationsResponse,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func sendMapDataError(w http.ResponseWriter, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(MapDataResponse{
+		Success: false,
+		Error:   message,
+	})
 }
 
 func handlePathfind(w http.ResponseWriter, r *http.Request) {
@@ -102,10 +167,6 @@ func handlePathfind(w http.ResponseWriter, r *http.Request) {
 		sendError(w, "Invalid request: "+err.Error())
 		return
 	}
-
-	// Normalize station names to lowercase for case-insensitive matching
-	req.StartStation = strings.ToLower(strings.TrimSpace(req.StartStation))
-	req.EndStation = strings.ToLower(strings.TrimSpace(req.EndStation))
 
 	// Read and parse the map file
 	mapPath := filepath.Join("maps", req.MapFile)
@@ -122,6 +183,46 @@ func handlePathfind(w http.ResponseWriter, r *http.Request) {
 	stationsMap := make(map[string]*algorithm.Station)
 	for _, s := range stations {
 		stationsMap[strings.ToLower(s.Name)] = s
+	}
+
+	// If start/end stations are empty, find the two stations with maximum distance
+	if req.StartStation == "" || req.EndStation == "" {
+		maxDist := 0.0
+		var maxStart, maxEnd string
+		
+		stationList := make([]*algorithm.Station, 0, len(stationsMap))
+		for _, s := range stationsMap {
+			stationList = append(stationList, s)
+		}
+		
+		for i := 0; i < len(stationList); i++ {
+			for j := i + 1; j < len(stationList); j++ {
+				dx := float64(stationList[i].X - stationList[j].X)
+				dy := float64(stationList[i].Y - stationList[j].Y)
+				dist := math.Sqrt(dx*dx + dy*dy) // actual Euclidean distance
+				
+				if dist > maxDist {
+					maxDist = dist
+					// Use alphabetical order for consistency
+					name1 := strings.ToLower(stationList[i].Name)
+					name2 := strings.ToLower(stationList[j].Name)
+					if name1 < name2 {
+						maxStart = name1
+						maxEnd = name2
+					} else {
+						maxStart = name2
+						maxEnd = name1
+					}
+				}
+			}
+		}
+		
+		req.StartStation = maxStart
+		req.EndStation = maxEnd
+	} else {
+		// Normalize station names to lowercase for case-insensitive matching
+		req.StartStation = strings.ToLower(strings.TrimSpace(req.StartStation))
+		req.EndStation = strings.ToLower(strings.TrimSpace(req.EndStation))
 	}
 
 	// Validate inputs
@@ -159,10 +260,12 @@ func handlePathfind(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := PathfinderResponse{
-		Success:   true,
-		Stations:  stationsResponse,
-		Paths:     pathsResponse,
-		Movements: movements,
+		Success:      true,
+		Stations:     stationsResponse,
+		Paths:        pathsResponse,
+		Movements:    movements,
+		StartStation: req.StartStation,
+		EndStation:   req.EndStation,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -65,14 +65,3 @@ small-00
 31-large
 04-05
 05-large
-
-------------------------------
-
-T1-10 T4-13 T6-00
-T1-11 T2-10 T4-14 T5-13 T6-01
-T1-12 T2-11 T3-10 T4-15 T5-14 T6-02 T9-13
-T1-large T2-12 T3-11 T4-21 T5-15 T6-03 T7-10 T9-14
-T2-large T3-12 T4-22 T5-21 T6-04 T7-11 T8-10 T9-15
-T3-large T4-large T5-22 T6-05 T7-12 T8-11 T9-21
-T5-large T6-large T7-large T8-12 T9-22
-T8-large T9-large
