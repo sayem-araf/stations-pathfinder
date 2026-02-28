@@ -1,21 +1,21 @@
 package algorithm
-
-// FindShortestPath returns a single shortest path between start and end.
-// If no path exists, it returns nil.
+// This file implements the pathfinding algorithm to find one or more shortest paths between two stations in a graph, while minimizing shared edges/stations.
+import "sort"
+// FindShortestPath uses a breadth-first search (BFS) to find the shortest path from start to end, while respecting blocked stations. It returns a Path if found, or nil if no path exists.
 func (g *Graph) FindShortestPath(start, end string, blocked map[string]bool) Path {
 	if start == end {
 		return Path{start}
 	}
-
+// BFS initialization
 	visited := make(map[string]bool)
 	prev := make(map[string]string)
 	queue := []string{start}
 	visited[start] = true
-
+// BFS loop
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
-
+// Explore neighbors
 		for _, neighbor := range g.Adj[current] {
 			if blocked[neighbor] && neighbor != end {
 				continue
@@ -23,258 +23,188 @@ func (g *Graph) FindShortestPath(start, end string, blocked map[string]bool) Pat
 			if visited[neighbor] {
 				continue
 			}
-
 			visited[neighbor] = true
 			prev[neighbor] = current
-
 			if neighbor == end {
 				return reconstructPath(prev, start, end)
 			}
-
 			queue = append(queue, neighbor)
 		}
 	}
-
 	return nil
 }
-
-// FindPaths finds multiple disjoint paths between start and end
+// FindPaths finds one or more shortest paths between start and end, while attempting to minimize shared edges/stations. It returns a slice of Paths ordered from shortest to longest. If no path exists, an empty slice is returned.
 func (g *Graph) FindPaths(start, end string) []Path {
-	neighbors := g.Adj[start]
-	
-	// STEP 1: For each neighbor, find the shortest path
-	initialPaths := make([]Path, 0)
-	for _, neighbor := range neighbors {
-		path := g.findPathThroughNeighbor(start, end, neighbor)
+	seen := make(map[string]bool)
+	var candidates []Path
+// First, find all paths that start with each of the first hops from the start station
+	firstHops := g.Adj[start]
+// For each first hop, find a path and add it to candidates if it's unique
+	for _, firstHop := range firstHops {
+		path := g.bfsFrom(start, end, firstHop, nil)
 		if path != nil {
-			initialPaths = append(initialPaths, path)
+			key := pathKey(path)
+			if !seen[key] {
+				seen[key] = true
+				candidates = append(candidates, path)
+			}
 		}
 	}
-	
-	if len(initialPaths) == 0 {
-		return nil
-	}
-	
-	// STEP 2: Try to resolve conflicts by finding alternative paths
-	// Keep trying until we have maximum disjoint paths
-	bestPaths := g.findMaximumDisjointPaths(start, end, neighbors, initialPaths)
-	
-	// STEP 3: Return best set of paths
-	if len(bestPaths) >= 2 {
-		return bestPaths
-	}
-	
-	// For maps where paths must overlap, return all paths
-	if len(initialPaths) > 0 {
-		return initialPaths
-	}
-	
-	return nil
-}
-
-// findMaximumDisjointPaths tries to find the maximum number of disjoint paths
-func (g *Graph) findMaximumDisjointPaths(start, end string, neighbors []string, initialPaths []Path) []Path {
-	// Check if initial paths are disjoint
-	disjoint := g.selectDisjointPaths(initialPaths)
-	
-	// If we already have as many disjoint paths as neighbors, we're done
-	if len(disjoint) == len(neighbors) {
-		return disjoint
-	}
-	
-	// If we're missing disjoint paths, try to find alternative routes
-	// that avoid conflicts
-	if len(disjoint) < len(neighbors) {
-		// Build a conflict map showing which stations are shared
-		conflicts := g.findConflicts(initialPaths)
-		
-		// For each path that has conflicts, try to find an alternative
-		improvedPaths := make([]Path, len(initialPaths))
-		copy(improvedPaths, initialPaths)
-		
-		for i, path := range initialPaths {
-			neighbor := path[1] // First hop
-			
-			// Check if this path has conflicts
-			hasConflict := false
-			for j := 1; j < len(path)-1; j++ {
-				if len(conflicts[path[j]]) > 1 {
-					hasConflict = true
-					break
+// Next, for each first hop, block the stations used by paths from other first hops and try to find a new path
+	for i, firstHop := range firstHops {
+		blocked := make(map[string]bool)
+		for j, otherHop := range firstHops {
+			if i == j {
+				continue
+			}// Find the path for this other first hop and block its stations
+			path := g.bfsFrom(start, end, otherHop, nil)
+			if path != nil {
+				for k := 1; k < len(path)-1; k++ {
+					blocked[path[k]] = true
 				}
 			}
-			
-			if hasConflict {
-				// Build blocked set from OTHER paths
-				blocked := make(map[string]bool)
-				for k, otherPath := range improvedPaths {
-					if k != i {
-						for j := 1; j < len(otherPath)-1; j++ {
-							blocked[otherPath[j]] = true
-						}
-					}
-				}
-				
-				// Try to find alternative path avoiding blocked stations
-				altPath := g.findPathThroughNeighborAvoiding(start, end, neighbor, blocked)
-				if altPath != nil {
-					improvedPaths[i] = altPath
+		}// Now try to find a path from this first hop while blocking the stations used by other first hops
+		path := g.bfsFrom(start, end, firstHop, blocked)
+		if path != nil {
+			key := pathKey(path)
+			if !seen[key] {
+				seen[key] = true
+				candidates = append(candidates, path)
+			}
+		}
+	}
+// Finally, try all pairs of first hops to find disjoint paths
+	for i := 0; i < len(firstHops); i++ {
+		for j := i + 1; j < len(firstHops); j++ {
+			p1 := g.bfsFrom(start, end, firstHops[i], nil)
+			if p1 == nil {
+				continue
+			} // Block the stations used by p1 (except start and end) and try to find a path from the other first hop
+			blocked := make(map[string]bool)
+			for k := 1; k < len(p1)-1; k++ {
+				blocked[p1[k]] = true
+			} // Now try to find a path from the other first hop while blocking the stations used by p1
+			p2 := g.bfsFrom(start, end, firstHops[j], blocked)
+			if p2 != nil {
+				key := pathKey(p2)
+				if !seen[key] {
+					seen[key] = true
+					candidates = append(candidates, p2)
 				}
 			}
 		}
-		
-		// Check if improved paths are better
-		improvedDisjoint := g.selectDisjointPaths(improvedPaths)
-		if len(improvedDisjoint) > len(disjoint) {
-			return improvedDisjoint
+	}
+// Sort candidates by length and find the best disjoint set
+	sort.Slice(candidates, func(i, j int) bool {
+		return len(candidates[i]) < len(candidates[j])
+	})
+// Find the best set of disjoint paths from candidates
+	best := g.findBestDisjointSet(candidates)
+// If no disjoint paths found, return the single shortest path
+	if len(best) == 0 {
+		p := g.FindShortestPath(start, end, nil)
+		if p != nil {
+			best = []Path{p}
 		}
 	}
-	
-	return disjoint
-}
+// Sort the best paths by length before returning
+	sort.Slice(best, func(i, j int) bool {
+		return len(best[i]) < len(best[j])
+	})
 
-// findConflicts returns a map of station -> list of path indices using it
-func (g *Graph) findConflicts(paths []Path) map[string][]int {
-	conflicts := make(map[string][]int)
-	for i, path := range paths {
-		for j := 1; j < len(path)-1; j++ {
-			station := path[j]
-			conflicts[station] = append(conflicts[station], i)
-		}
-	}
-	return conflicts
+	return best
 }
-
-// selectDisjointPaths greedily selects the maximum set of disjoint paths
-func (g *Graph) selectDisjointPaths(paths []Path) []Path {
-	if len(paths) == 0 {
-		return nil
-	}
-	
-	var selected []Path
-	blocked := make(map[string]bool)
-	
-	// Try each starting order to find the best combination
-	var bestSelection []Path
-	
-	for startIdx := 0; startIdx < len(paths); startIdx++ {
-		selected = []Path{}
-		blocked = make(map[string]bool)
-		
-		for i := 0; i < len(paths); i++ {
-			idx := (startIdx + i) % len(paths)
-			path := paths[idx]
-			
-			// Check if path conflicts with already selected paths
-			hasConflict := false
-			for j := 1; j < len(path)-1; j++ {
-				if blocked[path[j]] {
-					hasConflict = true
-					break
-				}
-			}
-			
-			if !hasConflict {
-				selected = append(selected, path)
-				// Block intermediate stations
-				for j := 1; j < len(path)-1; j++ {
-					blocked[path[j]] = true
-				}
-			}
-		}
-		
-		if len(selected) > len(bestSelection) {
-			bestSelection = make([]Path, len(selected))
-			copy(bestSelection, selected)
-		}
-	}
-	
-	return bestSelection
-}
-
-// findPathThroughNeighbor finds a path that uses the specified neighbor as the first hop
-func (g *Graph) findPathThroughNeighbor(start, end, firstHop string) Path {
+// bfsFrom performs a BFS starting from the firstHop station, while respecting blocked stations. It returns a Path if found, or nil if no path exists.
+func (g *Graph) bfsFrom(start, end, firstHop string, blocked map[string]bool) Path {
 	if firstHop == end {
 		return Path{start, end}
 	}
-	
+// BFS initialization
 	visited := make(map[string]bool)
 	prev := make(map[string]string)
-	queue := []string{firstHop}
 	visited[start] = true
 	visited[firstHop] = true
 	prev[firstHop] = start
-	
+	queue := []string{firstHop}
+// BFS loop
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
-		
+// Explore neighbors
 		for _, neighbor := range g.Adj[current] {
 			if visited[neighbor] {
 				continue
 			}
-			
-			visited[neighbor] = true
-			prev[neighbor] = current
-			
-			if neighbor == end {
-				return reconstructPath(prev, start, end)
-			}
-			
-			queue = append(queue, neighbor)
-		}
-	}
-	
-	return nil
-}
-
-// findPathThroughNeighborAvoiding finds a path through neighbor while avoiding blocked stations
-func (g *Graph) findPathThroughNeighborAvoiding(start, end, firstHop string, blocked map[string]bool) Path {
-	if firstHop == end {
-		return Path{start, end}
-	}
-	
-	visited := make(map[string]bool)
-	prev := make(map[string]string)
-	queue := []string{firstHop}
-	visited[start] = true
-	visited[firstHop] = true
-	prev[firstHop] = start
-	
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
-		
-		for _, neighbor := range g.Adj[current] {
-			// Skip blocked stations (unless it's the destination)
 			if blocked[neighbor] && neighbor != end {
 				continue
 			}
-			
-			if visited[neighbor] {
-				continue
-			}
-			
 			visited[neighbor] = true
 			prev[neighbor] = current
-			
 			if neighbor == end {
 				return reconstructPath(prev, start, end)
 			}
-			
 			queue = append(queue, neighbor)
 		}
 	}
-	
 	return nil
 }
-
-// pathsEqual checks if two paths are identical
+//	pathKey generates a unique string key for a given Path, used for deduplication in the seen map.		
+func pathKey(p Path) string {
+	result := ""
+	for _, s := range p {
+		result += s + "|"
+	}
+	return result
+}
+//	findBestDisjointSet takes a list of candidate paths and finds the largest subset of paths that are disjoint (i.e., do not share any stations except start and end). It uses a backtracking approach to explore all combinations of paths and keeps track of the best set found.
+func (g *Graph) findBestDisjointSet(candidates []Path) []Path {
+	var best []Path
+// trySelect is a recursive function that tries to select paths from candidates while ensuring they are disjoint. It keeps track of the currently selected paths and the stations that are already used by those paths.
+	var trySelect func(idx int, selected []Path, usedStations map[string]bool)
+	trySelect = func(idx int, selected []Path, usedStations map[string]bool) {
+		if len(selected) > len(best) {
+			best = make([]Path, len(selected))
+			copy(best, selected)
+		}
+		if idx >= len(candidates) {
+			return
+		}
+		if len(selected)+len(candidates)-idx <= len(best) {
+			return
+		}
+// Try to include the current candidate path if it doesn't conflict with already used stations
+		path := candidates[idx]
+		conflict := false
+		for i := 1; i < len(path)-1; i++ {
+			if usedStations[path[i]] {
+				conflict = true
+				break
+			}
+		}
+// If no conflict, include this path and mark its stations as used
+		if !conflict {
+			newUsed := make(map[string]bool)
+			for k, v := range usedStations {
+				newUsed[k] = v
+			}
+			for i := 1; i < len(path)-1; i++ {
+				newUsed[path[i]] = true
+			}
+			trySelect(idx+1, append(selected, path), newUsed)
+		}
+// Also try without including the current candidate path
+		trySelect(idx+1, selected, usedStations)
+	}
+// Start the recursive search with an empty selection and no used stations
+	trySelect(0, []Path{}, make(map[string]bool))
+	return best
+}
+//	pathsEqual is a helper function that checks if two paths are equal by comparing their lengths and corresponding stations. It returns true if the paths are identical, and false otherwise.
 func pathsEqual(p1, p2 Path) bool {
 	if len(p1) != len(p2) {
 		return false
 	}
-	for i := range p1 {
+	for i := range p1 {// Compare each station in the paths
 		if p1[i] != p2[i] {
 			return false
 		}
