@@ -141,9 +141,100 @@ Visit E (END)                 | Dequeue E → visit it
 
 Here are all of the errors the program reports and why.
 
-## Usage
-For usage [Testing](TESTING.md).
+### 1. Invalid Arguments
 
+**Too few arguments:**
 
-### Bonus Function
+If user runs program with under four arguments it prints out:
 
+`Error: Too few arguments`
+
+**Too many arguments:**
+
+If user runs program with over four arguments it prints out:
+
+`Error: Too many arguments`
+
+### 2. Invalid Station Names
+
+**Non-existent start station:**
+
+If start station doesn't exist in the map it prints out:
+
+`Error: Invalid start station`
+
+**Non-existent end station:**
+
+If end station doesn't exist in the map it prints out:
+
+`Error: Invalid end station`
+
+### 3. Same Start and End
+
+If start and end station are the same it prints out:
+
+`Error: Start station can't be the same as end station`
+
+### 4. Invalid Train Count
+
+If the number of trains is not valid it prints out:
+
+`Error: Number of trains must be at least 1`
+
+### 5. Invalid Map File
+
+**Non-existent file:**
+
+If the map file doesn't exist it prints out:
+
+`Error: Failed to read file: ...`
+
+**No path exists:**
+
+If no path exists between stations it prints out:
+
+`Error: No path exists between A and C`
+
+**Duplicate station names:**
+
+If station names are repeated in the map it prints out:
+
+`Error: Duplicate station name: ...`
+
+**Invalid coordinates:**
+
+If the coordinates aren't valid positive integers it prints out:
+
+`Error: Station ... has invalid ... coordinate: ...`
+
+**Duplicate coordinates:**
+
+If stations have duplicate coordinates it prints out:
+
+`Error: Stations ... and ... share the same coordinates ...`
+
+**Invalid station names:**
+
+If the station names aren't valid it prints out:
+
+`Error: Invalid station name: ...`
+
+**No stations section:**
+
+If the map file doesn't contain a section for stations it prints out:
+
+`Error: Map does not contain a stations section`
+
+**No connections section:**
+
+If the map file doesn't contain a section for connections it prints out:
+
+`Error: Map does not contain a connections section`
+
+**Duplicate connections:**
+
+If stations have duplicate connections it prints out:
+
+`Error: Duplicate connection between ... and ...`
+
+---
