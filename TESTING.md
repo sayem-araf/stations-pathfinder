@@ -59,7 +59,7 @@ cd /Users/sayemaraf/Desktop/VSCodePorject/pathfinder/pathfinder
 Test with the standard example from requirements:
 
 ```bash
-go run ./parser maps/london.map waterloo st_pancras 4
+go run . maps/london.map waterloo st_pancras 4
 ```
 
 **Expected Output:**
@@ -77,7 +77,7 @@ T3-st_pancras T4-st_pancras
 ### 3. Count Number of Turns
 
 ```bash
-go run ./parser maps/london.map waterloo st_pancras 4 | wc -l
+go run . maps/london.map waterloo st_pancras 4 | wc -l
 ```
 
 **Expected Output:** `3`
@@ -88,14 +88,14 @@ This confirms the solution is optimal with minimal turns.
 
 **2 trains:**
 ```bash
-go run ./parser maps/london.map waterloo st_pancras 2
+go run . maps/london.map waterloo st_pancras 2
 ```
 
 **Expected:** 2 lines (2 turns)
 
 **10 trains:**
 ```bash
-go run ./parser maps/london.map waterloo st_pancras 10
+go run . maps/london.map waterloo st_pancras 10
 ```
 
 **Expected:** More turns as more trains need to traverse
@@ -104,17 +104,17 @@ go run ./parser maps/london.map waterloo st_pancras 10
 
 **Small map:**
 ```bash
-go run ./parser maps/small.map A D 5
+go run . maps/small.map A D 5
 ```
 
 **Beginning map:**
 ```bash
-go run ./parser maps/beginning.map a e 3
+go run . maps/beginning.map a e 3
 ```
 
 **Bond map (more complex):**
 ```bash
-go run ./parser maps/bond.map bond eon 6
+go run . maps/bond.map bond eon 6
 ```
 
 ### 6. Build Executable (Optional)
@@ -122,7 +122,7 @@ go run ./parser maps/bond.map bond eon 6
 Build a standalone executable:
 
 ```bash
-go build -o pathfinder ./parser
+go build -o pathfinder .
 ```
 
 Then run it:
@@ -219,14 +219,14 @@ The program must handle various error conditions gracefully.
 
 **Too few arguments:**
 ```bash
-go run ./parser
+go run .
 ```
 
 **Expected:** `Error: Too few arguments`
 
 **Too many arguments:**
 ```bash
-go run ./parser maps/london.map waterloo st_pancras 4 extra
+go run . maps/london.map waterloo st_pancras 4 extra
 ```
 
 **Expected:** `Error: Too many arguments`
@@ -235,14 +235,14 @@ go run ./parser maps/london.map waterloo st_pancras 4 extra
 
 **Non-existent start station:**
 ```bash
-go run ./parser maps/london.map invalid_station st_pancras 4
+go run . maps/london.map invalid_station st_pancras 4
 ```
 
 **Expected:** `Error: Invalid start station`
 
 **Non-existent end station:**
 ```bash
-go run ./parser maps/london.map waterloo invalid_station 4
+go run . maps/london.map waterloo invalid_station 4
 ```
 
 **Expected:** `Error: Invalid end station`
@@ -250,7 +250,7 @@ go run ./parser maps/london.map waterloo invalid_station 4
 ### 3. Same Start and End
 
 ```bash
-go run ./parser maps/london.map waterloo waterloo 4
+go run . maps/london.map waterloo waterloo 4
 ```
 
 **Expected:** `Error: Start station can't be the same as end station`
@@ -259,21 +259,21 @@ go run ./parser maps/london.map waterloo waterloo 4
 
 **Non-numeric value:**
 ```bash
-go run ./parser maps/london.map waterloo st_pancras abc
+go run . maps/london.map waterloo st_pancras abc
 ```
 
 **Expected:** `Error: Number of trains must be at least 1`
 
 **Zero trains:**
 ```bash
-go run ./parser maps/london.map waterloo st_pancras 0
+go run . maps/london.map waterloo st_pancras 0
 ```
 
 **Expected:** `Error: Number of trains must be at least 1`
 
 **Negative trains:**
 ```bash
-go run ./parser maps/london.map waterloo st_pancras -5
+go run . maps/london.map waterloo st_pancras -5
 ```
 
 **Expected:** `Error: Number of trains must be at least 1`
@@ -282,7 +282,7 @@ go run ./parser maps/london.map waterloo st_pancras -5
 
 **Non-existent file:**
 ```bash
-go run ./parser maps/nonexistent.map waterloo st_pancras 4
+go run . maps/nonexistent.map waterloo st_pancras 4
 ```
 
 **Expected:** `Error: Failed to read file: ...`
@@ -293,56 +293,56 @@ The project includes test maps for specific error scenarios:
 
 **No path exists:**
 ```bash
-go run ./parser maps/testnopath.map A C 2
+go run . maps/testnopath.map A C 2
 ```
 
 **Expected:** `Error: No path exists between A and C`
 
 **Duplicate station names:**
 ```bash
-go run ./parser maps/testdupnames.map A B 2
+go run . maps/testdupnames.map A B 2
 ```
 
 **Expected:** `Error: Duplicate station name: ...`
 
 **Invalid coordinates:**
 ```bash
-go run ./parser maps/testbadcoords.map A B 2
+go run . maps/testbadcoords.map A B 2
 ```
 
 **Expected:** `Error: Station ... has invalid ... coordinate: ...`
 
 **Duplicate coordinates:**
 ```bash
-go run ./parser maps/testsamecoords.map A B 2
+go run . maps/testsamecoords.map A B 2
 ```
 
 **Expected:** `Error: Stations ... and ... share the same coordinates ...`
 
 **Invalid station names:**
 ```bash
-go run ./parser maps/testinvalidstations.map A B 2
+go run . maps/testinvalidstations.map A B 2
 ```
 
 **Expected:** `Error: Invalid station name: ...`
 
 **No stations section:**
 ```bash
-go run ./parser maps/testnostations.map A B 2
+go run . maps/testnostations.map A B 2
 ```
 
 **Expected:** `Error: Map does not contain a stations section`
 
 **No connections section:**
 ```bash
-go run ./parser maps/testnoconnections.map A B 2
+go run . maps/testnoconnections.map A B 2
 ```
 
 **Expected:** `Error: Map does not contain a connections section`
 
 **Duplicate connections:**
 ```bash
-go run ./parser maps/testduplicateroutes.map A B 2
+go run . maps/testduplicateroutes.map A B 2
 ```
 
 **Expected:** `Error: Duplicate connection between ... and ...`
@@ -356,7 +356,7 @@ Test the pathfinder with complex networks to verify performance.
 ### 1. Large Map Test
 
 ```bash
-time go run ./parser maps/testbigmap.map start end 100
+time go run . maps/testbigmap.map start end 100
 ```
 
 **Verify:**
@@ -367,7 +367,7 @@ time go run ./parser maps/testbigmap.map start end 100
 ### 2. Many Trains Test
 
 ```bash
-time go run ./parser maps/london.map waterloo st_pancras 100
+time go run . maps/london.map waterloo st_pancras 100
 ```
 
 **Verify:**
@@ -378,7 +378,7 @@ time go run ./parser maps/london.map waterloo st_pancras 100
 ### 3. Complex Network Test
 
 ```bash
-time go run ./parser maps/bond.map bond eon 50
+time go run . maps/bond.map bond eon 50
 ```
 
 **Verify:**
@@ -501,16 +501,16 @@ Complete test session from start to finish:
 cd /Users/sayemaraf/Desktop/VSCodePorject/pathfinder/pathfinder
 
 # 2. Test basic functionality
-go run ./parser maps/london.map waterloo st_pancras 4
+go run . maps/london.map waterloo st_pancras 4
 
 # 3. Verify turn count
-go run ./parser maps/london.map waterloo st_pancras 4 | wc -l
+go run . maps/london.map waterloo st_pancras 4 | wc -l
 
 # 4. Test error handling
-go run ./parser maps/london.map invalid waterloo 4
+go run . maps/london.map invalid waterloo 4
 
 # 5. Build executable
-go build -o pathfinder ./parser
+go build -o pathfinder .
 
 # 6. Test executable
 ./pathfinder maps/london.map waterloo st_pancras 4
