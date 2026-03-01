@@ -100,12 +100,50 @@ After following the [building instructions](#building) run the program with the 
 If you haven’t built, you can run the code by **locating** the folder and using ```go run . ```
 
 ## Algorithm
+The used Algorithm is The Breadth-First Search or BFS.
+
+ BFS algorithm is a method for systematically exploring a graph or tree data structure,  
+ visiting all nodes at the current depth level before moving on to nodes at the next depth level.
+
+ For example:
+ ```
+GRAPH                         | WHAT BFS IS DOING
+------------------------------|---------------------------------
+      A                       | Lets say that Start is A and E is the End,    
+     / \                      | in this case BFS works likes this.
+    B   C                     | 
+   / \   \                    | Start at A. Queue = [A]
+  D   E   F                   |
+
+Visit A                       | Dequeue A → visit it
+                              | Enqueue neighbors B, C
+                              | Queue = [B, C]
+
+Visit B                       | Dequeue B → visit it
+                              | Enqueue unvisited D, E
+                              | Queue = [C, D, E]
+
+Visit C                       | Dequeue C → visit it
+                              | Enqueue unvisited F
+                              | Queue = [D, E, F]
+
+Visit D                       | Dequeue D → visit it
+                              | No new neighbors
+                              | Queue = [E, F]
+
+Visit E (END)                 | Dequeue E → visit it
+                              | Stops here because E is the End
+                              | (F is never processed)
+ ```
+
 
 ## Error handler
 
 Here are all of the errors the program reports and why.
 
 ## Usage
+For usage [Testing](TESTING.md).
+
 
 ### Bonus Function
 
