@@ -1,5 +1,7 @@
 # Pathfinder
+
 Pathfinder is a Go-based command-line and web application that finds optimal routes for scheduling multiple trains across a railway network. It solves the problem of routing trains from a start station to an end station while respecting fixed-block signalling constraints.
+
 ---
 
 ## Table of Contents
