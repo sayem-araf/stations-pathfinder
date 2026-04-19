@@ -5,8 +5,6 @@ Pathfinder is a Go-based command-line and web application that finds optimal rou
 ---
 
 ## Table of Contents
-- **[Description](#description)**
-- **[Requirements](#requirements)**
 - **[Project Structure](#project-structure)**
 - **[Building](#building)**
     - [Linux & Visual Studio Code](#linux--visual-studio-code)
@@ -21,10 +19,6 @@ Pathfinder is a Go-based command-line and web application that finds optimal rou
 - **[Bonus Function](#bonus-function)**
 
 ---
-
-## Description
-
-## Requirements
 
 ## Project Structure
 pathfinder/                   
