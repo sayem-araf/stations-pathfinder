@@ -1,5 +1,5 @@
 package web
-// This file implements the web server for the Pathfinder application.
+
 import (
 	"encoding/json"
 	"fmt"
@@ -14,8 +14,7 @@ import (
 
 	"gitea.kood.tech/sayemaraf/pathfinder/algorithm"
 )
-// PathfinderRequest represents the JSON structure of the request sent by the frontend when requesting pathfinding results. 
-// It includes the map file name, start and end stations, and the number of trains to simulate.
+
 type PathfinderRequest struct {
 	MapFile      string `json:"mapFile"`
 	StartStation string `json:"startStation"`
@@ -356,8 +355,7 @@ func simulateMovements(paths []algorithm.Path, numTrains int, start, end string)
 
 	return allMovements
 }
-//	validate checks the validity of the pathfinding request by ensuring that the start and end stations are different, exist in the station map, and that the number of trains is at least 1. 
-// It returns an error if any of these conditions are not met.
+
 func validate(req PathfinderRequest, stations map[string]*algorithm.Station) error {
 	if req.StartStation == req.EndStation {
 		return fmt.Errorf("start and end stations cannot be the same")
@@ -373,8 +371,7 @@ func validate(req PathfinderRequest, stations map[string]*algorithm.Station) err
 	}
 	return nil
 }
-// sendError is a helper function that sends a JSON response indicating an error occurred during the pathfinding process. 
-// It sets the success field to false and includes the error message in the response.
+
 func sendError(w http.ResponseWriter, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(PathfinderResponse{
@@ -382,8 +379,7 @@ func sendError(w http.ResponseWriter, message string) {
 		Error:   message,
 	})
 }
-// normalizeInput processes the raw input data from the map file by splitting it into lines, removing comments (anything after a #), trimming whitespace, and filtering out empty lines. 
-// It returns a slice of cleaned lines that can be further parsed to extract station and connection information.
+
 func normalizeInput(data []byte) []string {
 	raw := strings.Split(string(data), "\n")
 	var lines []string
@@ -400,9 +396,7 @@ func normalizeInput(data []byte) []string {
 
 	return lines
 }
-// parseMap takes the cleaned lines from the map file and extracts station information and connections. 
-// It identifies sections for stations and connections, parses the station details (name and coordinates), and builds a map of station names to Station structs. 
-// It also collects the connections as pairs of station names. The function returns a slice of Station pointers and a slice of connection pairs.	
+
 func parseMap(lines []string) ([]*algorithm.Station, [][2]string) {
 	section := ""
 	stations := make(map[string]*algorithm.Station)
@@ -417,7 +411,7 @@ func parseMap(lines []string) ([]*algorithm.Station, [][2]string) {
 			section = "connections"
 			continue
 		}
-//		Parse station lines in the stations section, expecting format "Name, X, Y".
+
 		if section == "stations" {
 			parts := strings.Split(line, ",")
 			if len(parts) != 3 {
@@ -431,7 +425,7 @@ func parseMap(lines []string) ([]*algorithm.Station, [][2]string) {
 			stations[name] = &algorithm.Station{Name: name, X: x, Y: y}
 			continue
 		}
-//	Parse connection lines in the connections section, expecting format "StationA - StationB".
+
 		if section == "connections" {
 			parts := strings.Split(line, "-")
 			if len(parts) != 2 {
@@ -443,7 +437,7 @@ func parseMap(lines []string) ([]*algorithm.Station, [][2]string) {
 			connections = append(connections, [2]string{a, b})
 		}
 	}
-//	Convert stations map to slice for graph construction
+
 	stationsSlice := make([]*algorithm.Station, 0, len(stations))
 	for _, s := range stations {
 		stationsSlice = append(stationsSlice, s)
