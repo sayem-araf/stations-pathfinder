@@ -5,6 +5,8 @@ Pathfinder is a Go-based command-line and web application that finds optimal rou
 ---
 
 ## Table of Contents
+- **[Description](#description)**
+- **[Requirements](#requirements)**
 - **[Project Structure](#project-structure)**
 - **[Building](#building)**
     - [Linux & Visual Studio Code](#linux--visual-studio-code)
@@ -19,6 +21,14 @@ Pathfinder is a Go-based command-line and web application that finds optimal rou
 - **[Bonus Function](#bonus-function)**
 
 ---
+
+## Description
+
+Pathfinder reads a railway network map file, finds optimal routes between stations using BFS, and schedules multiple trains simultaneously while respecting fixed-block signalling rules — meaning no two trains can occupy the same track segment at the same time.
+
+## Requirements
+
+Go 1.21 or later. No external dependencies.
 
 ## Project Structure
 pathfinder/                   
@@ -52,7 +62,6 @@ Windows ```cd c:\yourpath\to\pathfinder```
 
 Linux ```cd /yourpath/to/pathfinder```
 
-Visual Studio code ```git clone https://gitea.kood.tech/sayemaraf/pathfinder.git```
 
 ### Linux & Visual Studio Code 
 If building on Linux **terminal** use:
